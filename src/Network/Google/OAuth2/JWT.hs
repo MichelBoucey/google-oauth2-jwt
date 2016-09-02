@@ -12,7 +12,7 @@ import           Codec.Crypto.RSA.Pure
 import qualified Data.ByteString            as B
 import           Data.ByteString.Base64.URL (encode)
 import           Data.ByteString.Lazy       (fromStrict, toStrict)
-import           Data.Maybe                 (fromJust)
+import           Data.Maybe                 (fromMaybe, fromJust)
 import           Data.Monoid                ((<>))
 import qualified Data.Text                  as T
 import           Data.Text.Encoding
@@ -37,7 +37,7 @@ fromPEMFile f = readFile f >>= fromPEMString
 fromPEMString :: String -> IO PrivateKey
 fromPEMString s =
     fromJust . toKeyPair <$> readPrivateKey s PwNone
-        >>= \k -> return $ PrivateKey
+        >>= \k -> return PrivateKey
             { private_pub =
                   PublicKey { public_size = rsaSize k
                             , public_n    = rsaN k
@@ -56,7 +56,7 @@ fromPEMString s =
 --
 -- >grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=
 --
-getJWT :: Email
+getSignedJWT :: Email
        -- ^ The email address of the service account.
        -> Maybe Email
        -- ^ The email address of the user for which the
@@ -69,18 +69,15 @@ getJWT :: Email
        -- ^ The private key obtained from the Google API Console.
        -> IO (Either String B.ByteString)
        -- ^ Either an error message or a signed JWT.
-getJWT iss msub scopes mexp privateKey = do
-    let expt = fromIntegral $
-                  case mexp of
-                      Just e  -> e
-                      Nothing -> 3600
+getSignedJWT iss msub scopes mexp privateKey = do
+    let expt = fromIntegral $ fromMaybe 3600 mexp
     cs <- jwtClaimsSet
               (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) expt
     let i = jwtHeader <> "." <> cs
-    return $ do
+    return $
         if expt > 0 && expt <= 3600 then
             case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
-                Right s -> Right $ i <> "." <> (encode $ toStrict s)
+                Right s -> Right $ i <> "." <> encode (toStrict s)
                 Left _  -> Left "RSAError"
                                     else Left "Bad expiration time"
   where
@@ -96,6 +93,6 @@ getJWT iss msub scopes mexp privateKey = do
             <> T.intercalate " " scopes <> "\",\"aud\":\"https://ww\
                \w.googleapis.com/oauth2/v4/token\",\"exp\":" <> exp'
             <> ",\"iat\":" <> iat' <> "}"
-    toText = (T.pack . show)
-    toJWT = (encode . encodeUtf8)
+    toText = T.pack . show
+    toJWT = encode . encodeUtf8
 
