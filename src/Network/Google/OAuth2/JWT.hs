@@ -6,7 +6,17 @@
 -- For all details : https://developers.google.com/identity/protocols/OAuth2ServiceAccount
 --
 
-module Network.Google.OAuth2.JWT where
+module Network.Google.OAuth2.JWT
+    (
+       Email
+    ,  Scope
+    ,  getSignedJWT
+
+    -- * Utils
+    , fromPEMString
+    , fromPEMFile
+
+    ) where
 
 import           Codec.Crypto.RSA.Pure
 import qualified Data.ByteString            as B
@@ -27,13 +37,16 @@ type Scope = T.Text
 
 type Email = T.Text
 
--- |Get the private key obtained from
+-- | Get the private key obtained from the
 -- the Google API Console from a PEM file.
 fromPEMFile :: FilePath -> IO PrivateKey
 fromPEMFile f = readFile f >>= fromPEMString
 
--- |Get the private key obtained from
--- the Google API Console from a PEM 'String'.
+-- | Get the private key obtained from the
+-- Google API Console from a PEM 'String'.
+--
+-- >fromPEMString "-----BEGIN PRIVATE KEY-----\nB9e ... bMdF\n-----END PRIVATE KEY-----\n"
+-- >
 fromPEMString :: String -> IO PrivateKey
 fromPEMString s =
     fromJust . toKeyPair <$> readPrivateKey s PwNone
@@ -62,11 +75,12 @@ getSignedJWT :: Email
        -- ^ The email address of the user for which the
        -- application is requesting delegated access.
        -> [Scope]
-       -- ^The list of the permissions that the application requests.
+       -- ^ The list of the permissions that the application requests.
        -> Maybe Int
        -- ^ Expiration time (maximun and default value is an hour, 3600).
        -> PrivateKey
-       -- ^ The private key obtained from the Google API Console.
+       -- ^ The private key gotten from the PEM string obtained from the
+       -- Google API Console.
        -> IO (Either String B.ByteString)
        -- ^ Either an error message or a signed JWT.
 getSignedJWT iss msub scopes mexp privateKey = do
