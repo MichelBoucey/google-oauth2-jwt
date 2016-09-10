@@ -90,13 +90,12 @@ getSignedJWT iss msub scopes met privateKey = do
         else do
             cs <- jwtClaimsSet
                  (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) et
-            let i = jwtHeader <> "." <> cs
+            let i = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}" <> "." <> cs
             return $
                 case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
                     Right s -> Right $ i <> "." <> encode (toStrict s)
                     Left _  -> Left "RSAError"
   where
-    jwtHeader = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
     jwtClaimsSet s e = do
         (exp',iat') <-
             getUnixTime >>= \t ->
