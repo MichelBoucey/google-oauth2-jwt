@@ -83,17 +83,18 @@ getSignedJWT :: Email
        -- Google API Console.
        -> IO (Either String B.ByteString)
        -- ^ Either an error message or a signed JWT.
-getSignedJWT iss msub scopes mexp privateKey = do
-    let expt = fromIntegral $ fromMaybe 3600 mexp
-    cs <- jwtClaimsSet
-              (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) expt
-    let i = jwtHeader <> "." <> cs
-    return $
-        if expt > 0 && expt <= 3600 then
-            case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
-                Right s -> Right $ i <> "." <> encode (toStrict s)
-                Left _  -> Left "RSAError"
-                                    else Left "Bad expiration time"
+getSignedJWT iss msub scopes met privateKey = do
+    let et = fromIntegral $ fromMaybe 3600 met
+    if et < 1 || et > 3600
+        then return $ Left "Bad expiration time"
+        else do
+            cs <- jwtClaimsSet
+                 (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) et
+            let i = jwtHeader <> "." <> cs
+            return $
+                case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
+                    Right s -> Right $ i <> "." <> encode (toStrict s)
+                    Left _  -> Left "RSAError"
   where
     jwtHeader = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
     jwtClaimsSet s e = do
