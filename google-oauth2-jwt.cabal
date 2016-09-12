@@ -1,5 +1,5 @@
 name:                google-oauth2-jwt
-version:             0.1.1.1
+version:             0.1.2.0
 synopsis:            Get a signed JWT for Google Service Accounts
 description:         Please see README.md
 homepage:            https://github.com/MichelBoucey/google-oauth2-jwt
