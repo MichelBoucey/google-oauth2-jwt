@@ -70,19 +70,19 @@ fromPEMString s =
 -- >grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=
 --
 getSignedJWT :: Email
-       -- ^ The email address of the service account.
-       -> Maybe Email
-       -- ^ The email address of the user for which the
-       -- application is requesting delegated access.
-       -> [Scope]
-       -- ^ The list of the permissions that the application requests.
-       -> Maybe Int
-       -- ^ Expiration time (maximun and default value is an hour, 3600).
-       -> PrivateKey
-       -- ^ The private key gotten from the PEM string obtained from the
-       -- Google API Console.
-       -> IO (Either String B.ByteString)
-       -- ^ Either an error message or a signed JWT.
+             -- ^ The email address of the service account.
+             -> Maybe Email
+             -- ^ The email address of the user for which the
+             -- application is requesting delegated access.
+             -> [Scope]
+             -- ^ The list of the permissions that the application requests.
+             -> Maybe Int
+             -- ^ Expiration time (maximun and default value is an hour, 3600).
+             -> PrivateKey
+             -- ^ The private key gotten from the PEM string obtained from the
+             -- Google API Console.
+             -> IO (Either String B.ByteString)
+             -- ^ Either an error message or a signed JWT.
 getSignedJWT iss msub scopes met privateKey = do
     let et = fromIntegral $ fromMaybe 3600 met
     if et < 1 || et > 3600
@@ -99,8 +99,8 @@ getSignedJWT iss msub scopes met privateKey = do
     jwtClaimsSet s e = do
         (exp',iat') <-
             getUnixTime >>= \t ->
-                return ( toText $ utSeconds t + CTime e
-                       , toText $ utSeconds t
+                return ( toText (utSeconds t + CTime e)
+                       , toText (utSeconds t)
                        )
         return $ toJWT $
                "{\"iss\":\"" <> iss <> "\"," <> s <> "\"scope\":\""
