@@ -3,7 +3,7 @@
 -- | Create a signed JWT needed to make the access token request
 -- to gain access to Google APIs for server to server applications.
 --
--- For all details : https://developers.google.com/identity/protocols/OAuth2ServiceAccount
+-- For all usage details, see https://developers.google.com/identity/protocols/OAuth2ServiceAccount
 --
 
 module Network.Google.OAuth2.JWT
@@ -49,20 +49,21 @@ fromPEMFile f = readFile f >>= fromPEMString
 -- >
 fromPEMString :: String -> IO PrivateKey
 fromPEMString s =
-    fromJust . toKeyPair <$> readPrivateKey s PwNone
-        >>= \k -> return PrivateKey
-            { private_pub =
-                  PublicKey { public_size = rsaSize k
-                            , public_n    = rsaN k
-                            , public_e    = rsaE k
-                            }
-            , private_d    = rsaD k
-            , private_p    = rsaP k
-            , private_q    = rsaQ k
-            , private_dP   = 0
-            , private_dQ   = 0
-            , private_qinv = 0
-            }
+  fromJust . toKeyPair <$> readPrivateKey s PwNone >>=
+    \k -> return
+      PrivateKey
+        { private_pub =
+            PublicKey { public_size = rsaSize k
+                      , public_n    = rsaN k
+                      , public_e    = rsaE k
+                      }
+        , private_d    = rsaD k
+        , private_p    = rsaP k
+        , private_q    = rsaQ k
+        , private_dP   = 0
+        , private_dQ   = 0
+        , private_qinv = 0
+        }
 
 -- | Create the signed JWT ready for transmission
 -- in the access token request as assertion value.
@@ -84,29 +85,28 @@ getSignedJWT :: Email
              -> IO (Either String B.ByteString)
              -- ^ Either an error message or a signed JWT.
 getSignedJWT iss msub scopes met privateKey = do
-    let et = fromIntegral $ fromMaybe 3600 met
-    if et < 1 || et > 3600
-        then return $ Left "Bad expiration time"
-        else do
-            cs <- jwtClaimsSet
-                 (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) et
-            let i = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}" <> "." <> cs
-            return $
-                case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
-                    Right s -> Right $ i <> "." <> encode (toStrict s)
-                    Left _  -> Left "RSAError"
+  let et = fromIntegral $ fromMaybe 3600 met
+  if et >= 1 && et <= 3600
+    then do
+      cs <-
+        jwtClaimsSet
+          (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) et
+      let i = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}" <> "." <> cs
+      return $
+        case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
+          Right s -> Right (i <> "." <> encode (toStrict s))
+          Left _  -> Left "RSAError"
+    else fail "Bad expiration time"
   where
     jwtClaimsSet s e = do
-        (exp',iat') <-
-            getUnixTime >>= \t ->
-                return ( toText (utSeconds t + CTime e)
-                       , toText (utSeconds t)
-                       )
-        return $ toJWT $
-               "{\"iss\":\"" <> iss <> "\"," <> s <> "\"scope\":\""
-            <> T.intercalate " " scopes <> "\",\"aud\":\"https://ww\
-               \w.googleapis.com/oauth2/v4/token\",\"exp\":" <> exp'
-            <> ",\"iat\":" <> iat' <> "}"
+      (exp',iat') <- getUnixTime >>=
+        \t -> return (toText (utSeconds t + CTime e),toText (utSeconds t))
+      return $
+        toJWT $
+          "{\"iss\":\"" <> iss <> "\"," <> s <> "\"scope\":\""
+          <> T.intercalate " " scopes <> "\",\"aud\":\"https:\
+          \//www.googleapis.com/oauth2/v4/token\",\"exp\":" <>
+          exp' <> ",\"iat\":" <> iat' <> "}"
     toText = T.pack . show
     toJWT = encode . encodeUtf8
 
