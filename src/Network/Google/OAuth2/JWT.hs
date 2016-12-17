@@ -84,29 +84,27 @@ getSignedJWT :: Email
              -- Google API Console.
              -> IO (Either String B.ByteString)
              -- ^ Either an error message or a signed JWT.
-getSignedJWT iss msub scopes met privateKey = do
-  let et = fromIntegral $ fromMaybe 3600 met
-  if et >= 1 && et <= 3600
+getSignedJWT iss msub scs mxt pk = do
+  let xt = fromIntegral (fromMaybe 3600 mxt)
+  if xt >= 1 && xt <= 3600
     then do
-      cs <-
-        jwtClaimsSet
-          (maybe T.empty (\s -> "\"sub\":\"" <> s <> "\",") msub) et
+      cs <- do
+        let s = maybe T.empty (\e -> "\"sub\":\"" <> e <> "\",") msub
+        (t',xt') <- getUnixTime >>=
+          \t -> return (toText (utSeconds t),toText (utSeconds t + CTime xt))
+        return $
+          toJWT $
+            "{\"iss\":\"" <> iss <> "\"," <> s <> "\"scope\":\"" <>
+            T.intercalate " " scs <> "\",\"aud\":\"https://www.goo\
+            \gleapis.com/oauth2/v4/token\",\"exp\":" <> xt' <> ",\"\
+            \iat\":" <> t' <> "}"
       let i = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}" <> "." <> cs
       return $
-        case rsassa_pkcs1_v1_5_sign hashSHA256 privateKey (fromStrict i) of
+        case rsassa_pkcs1_v1_5_sign hashSHA256 pk (fromStrict i) of
           Right s -> Right (i <> "." <> encode (toStrict s))
           Left _  -> Left "RSAError"
     else fail "Bad expiration time"
   where
-    jwtClaimsSet s e = do
-      (exp',iat') <- getUnixTime >>=
-        \t -> return (toText (utSeconds t + CTime e),toText (utSeconds t))
-      return $
-        toJWT $
-          "{\"iss\":\"" <> iss <> "\"," <> s <> "\"scope\":\""
-          <> T.intercalate " " scopes <> "\",\"aud\":\"https:\
-          \//www.googleapis.com/oauth2/v4/token\",\"exp\":" <>
-          exp' <> ",\"iat\":" <> iat' <> "}"
     toText = T.pack . show
     toJWT = encode . encodeUtf8
 
