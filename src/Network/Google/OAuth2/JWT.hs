@@ -38,7 +38,7 @@ type Scope = T.Text
 type Email = T.Text
 
 -- | Get the private key obtained from the
--- the Google API Console from a PEM file.
+-- Google API Console from a PEM file.
 fromPEMFile :: FilePath -> IO PrivateKey
 fromPEMFile f = readFile f >>= fromPEMString
 
@@ -53,10 +53,11 @@ fromPEMString s =
     \k -> return
       PrivateKey
         { private_pub =
-            PublicKey { public_size = rsaSize k
-                      , public_n    = rsaN k
-                      , public_e    = rsaE k
-                      }
+            PublicKey
+              { public_size = rsaSize k
+              , public_n    = rsaN k
+              , public_e    = rsaE k
+              }
         , private_d    = rsaD k
         , private_p    = rsaP k
         , private_q    = rsaQ k
@@ -70,20 +71,21 @@ fromPEMString s =
 --
 -- >grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=
 --
-getSignedJWT :: Email
-             -- ^ The email address of the service account.
-             -> Maybe Email
-             -- ^ The email address of the user for which the
-             -- application is requesting delegated access.
-             -> [Scope]
-             -- ^ The list of the permissions that the application requests.
-             -> Maybe Int
-             -- ^ Expiration time (maximun and default value is an hour, 3600).
-             -> PrivateKey
-             -- ^ The private key gotten from the PEM string obtained from the
-             -- Google API Console.
-             -> IO (Either String B.ByteString)
-             -- ^ Either an error message or a signed JWT.
+getSignedJWT
+  :: Email
+  -- ^ The email address of the service account.
+  -> Maybe Email
+  -- ^ The email address of the user for which the
+  -- application is requesting delegated access.
+  -> [Scope]
+  -- ^ The list of the permissions that the application requests.
+  -> Maybe Int
+  -- ^ Expiration time (maximun and default value is an hour, 3600).
+  -> PrivateKey
+  -- ^ The private key gotten from the PEM string obtained from the
+  -- Google API Console.
+  -> IO (Either String B.ByteString)
+  -- ^ Either an error message or a signed JWT.
 getSignedJWT iss msub scs mxt pk = do
   let xt = fromIntegral (fromMaybe 3600 mxt)
   if xt >= 1 && xt <= 3600
