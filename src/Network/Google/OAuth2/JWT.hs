@@ -91,20 +91,25 @@ getSignedJWT iss msub scs mxt pk = do
   if xt >= 1 && xt <= 3600
     then do
       cs <- do
-        let s = maybe T.empty (\e -> "\"sub\":\"" <> e <> "\",") msub
         (t',xt') <- getUnixTime >>=
-          \t -> return (toText (utSeconds t),toText (utSeconds t + CTime xt))
+          \t -> return
+            ( toText (utSeconds t)
+            , toText (utSeconds t + CTime xt) )
         return $
           toJWT $
-            "{\"iss\":\"" <> iss <> "\"," <> s <> "\"scope\":\"" <>
-            T.intercalate " " scs <> "\",\"aud\":\"https://www.goo\
-            \gleapis.com/oauth2/v4/token\",\"exp\":" <> xt' <> ",\"\
-            \iat\":" <> t' <> "}"
+            "{\"iss\":\"" <> iss <> "\"," <>
+            maybe T.empty (\e -> "\"sub\":\""
+            <> e <> "\",") msub <> "\"scope\":\""
+            <> T.intercalate " " scs <> "\",\"au\
+            \d\":\"https://www.googleapis.com/oa\
+            \uth2/v4/token\",\"exp\":" <> xt'
+            <> ",\"iat\":" <> t' <> "}"
       let i = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}" <> "." <> cs
       return $
-        case rsassa_pkcs1_v1_5_sign hashSHA256 pk (fromStrict i) of
-          Right s -> Right (i <> "." <> encode (toStrict s))
-          Left _  -> Left "RSAError"
+        either
+          (fail "RSAError")
+          (\s -> return (i <> "." <> encode (toStrict s)))
+          (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
     else fail "Bad expiration time"
   where
     toText = T.pack . show
