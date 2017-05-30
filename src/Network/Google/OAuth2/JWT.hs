@@ -109,10 +109,6 @@ getSignedJWT iss msub scs mxt pk = do
       (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
   where
     toT = T.pack . show
-
-header :: B.ByteString
-header = toB64 "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
-
-toB64 :: T.Text -> B.ByteString
-toB64 = encode . encodeUtf8
+    toB64 = encode . encodeUtf8
+    header = toB64 "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
 
