@@ -19,13 +19,14 @@ module Network.Google.OAuth2.JWT
     ) where
 
 import           Codec.Crypto.RSA.Pure
+import           Control.Monad              (unless)
 import qualified Data.ByteString            as B
 import           Data.ByteString.Base64.URL (encode)
 import           Data.ByteString.Lazy       (fromStrict, toStrict)
 import           Data.Maybe                 (fromMaybe, fromJust)
 import           Data.Monoid                ((<>))
 import qualified Data.Text                  as T
-import           Data.Text.Encoding
+import           Data.Text.Encoding         (encodeUtf8)
 import           Data.UnixTime              (getUnixTime, utSeconds)
 import           Foreign.C.Types
 import           OpenSSL.EVP.PKey           (toKeyPair)
@@ -33,9 +34,13 @@ import           OpenSSL.PEM                (PemPasswordSupply (PwNone),
                                              readPrivateKey)
 import           OpenSSL.RSA
 
-type Scope = T.Text
+data SignedJWT =
+  SignedJWT !B.ByteString
+  deriving (Eq, Show)
 
 type Email = T.Text
+
+type Scope = T.Text
 
 -- | Get the private key obtained from the
 -- Google API Console from a PEM file.
@@ -45,7 +50,7 @@ fromPEMFile f = readFile f >>= fromPEMString
 -- | Get the private key obtained from the
 -- Google API Console from a PEM 'String'.
 --
--- >fromPEMString "-----BEGIN PRIVATE KEY-----\nB9e ... bMdF\n-----END PRIVATE KEY-----\n"
+-- >fromPEMString "-----BEGIN PRIVATE KEY-----\nB9e [...] bMdF\n-----END PRIVATE KEY-----\n"
 -- >
 fromPEMString :: String -> IO PrivateKey
 fromPEMString s =
@@ -84,34 +89,29 @@ getSignedJWT
   -> PrivateKey
   -- ^ The private key gotten from the PEM string obtained from the
   -- Google API Console.
-  -> IO (Either String B.ByteString)
+  -> IO (Either String SignedJWT)
   -- ^ Either an error message or a signed JWT.
 getSignedJWT iss msub scs mxt pk = do
   let xt = fromIntegral (fromMaybe 3600 mxt)
-  if xt >= 1 && xt <= 3600
-    then do
-      cs <- do
-        (t',xt') <- getUnixTime >>=
-          \t -> return
-            ( toText (utSeconds t)
-            , toText (utSeconds t + CTime xt) )
-        return $
-          toJWT $
-            "{\"iss\":\"" <> iss <> "\"," <>
-            maybe T.empty (\e -> "\"sub\":\""
-            <> e <> "\",") msub <> "\"scope\":\""
-            <> T.intercalate " " scs <> "\",\"au\
-            \d\":\"https://www.googleapis.com/oa\
-            \uth2/v4/token\",\"exp\":" <> xt'
-            <> ",\"iat\":" <> t' <> "}"
-      let i = toJWT "{\"alg\":\"RS256\",\"typ\":\"JWT\"}" <> "." <> cs
-      return $
-        either
-          (fail "RSAError")
-          (\s -> return (i <> "." <> encode (toStrict s)))
-          (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
-    else fail "Bad expiration time"
+  unless (xt >= 1 && xt <= 3600) (fail "Bad expiration time")
+  t <- getUnixTime
+  let i = header <> "." <> toB64 ("{\"iss\":\"" <> iss <> "\","
+          <> maybe T.empty (\e -> "\"sub\":\"" <> e <> "\",") msub
+          <> "\"scope\":\"" <> T.intercalate " " scs <> "\",\"aud\
+          \\":\"https://www.googleapis.com/oauth2/v4/token\",\"ex\
+          \p\":" <> toT (utSeconds t + CTime xt) <> ",\"iat\":"
+          <> toT (utSeconds t) <> "}")
+  return $
+    either
+      (fail "RSAError")
+      (\s -> return $ SignedJWT $ i <> "." <> encode (toStrict s))
+      (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
   where
-    toText = T.pack . show
-    toJWT = encode . encodeUtf8
+    toT = T.pack . show
+
+header :: B.ByteString
+header = toB64 "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
+
+toB64 :: T.Text -> B.ByteString
+toB64 = encode . encodeUtf8
 
