@@ -8,7 +8,8 @@
 
 module Network.Google.OAuth2.JWT
     (
-       Email
+       SignedJWT
+    ,  Email
     ,  Scope
     ,  getSignedJWT
 
