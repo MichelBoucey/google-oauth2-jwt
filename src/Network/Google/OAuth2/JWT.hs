@@ -24,6 +24,7 @@ import           Control.Monad              (unless)
 import qualified Data.ByteString            as B
 import           Data.ByteString.Base64.URL (encode)
 import           Data.ByteString.Lazy       (fromStrict, toStrict)
+import           Data.ByteString.Char8      (unpack)
 import           Data.Maybe                 (fromMaybe, fromJust)
 import           Data.Monoid                ((<>))
 import qualified Data.Text                  as T
@@ -37,7 +38,10 @@ import           OpenSSL.RSA
 
 data SignedJWT =
   SignedJWT !B.ByteString
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show SignedJWT where
+  show (SignedJWT t) = unpack t
 
 type Email = T.Text
 
