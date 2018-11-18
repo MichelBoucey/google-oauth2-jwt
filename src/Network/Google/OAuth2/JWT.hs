@@ -36,8 +36,8 @@ import           OpenSSL.PEM                (PemPasswordSupply (PwNone),
                                              readPrivateKey)
 import           OpenSSL.RSA
 
-data SignedJWT =
-  SignedJWT !B.ByteString
+newtype SignedJWT =
+  SignedJWT B.ByteString
   deriving (Eq)
 
 instance Show SignedJWT where
