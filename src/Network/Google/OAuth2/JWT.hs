@@ -26,7 +26,7 @@ import           Data.ByteString.Base64.URL (encode)
 import           Data.ByteString.Lazy       (fromStrict, toStrict)
 import           Data.ByteString.Char8      (unpack)
 import           Data.Maybe                 (fromMaybe, fromJust)
-import           Data.Monoid                ((<>))
+-- import           Data.Monoid                ((<>))
 import qualified Data.Text                  as T
 import           Data.Text.Encoding         (encodeUtf8)
 import           Data.UnixTime              (getUnixTime, utSeconds)
@@ -108,7 +108,7 @@ getSignedJWT iss msub scs mxt pk = do
           <> toT (utSeconds t) <> "}")
   return $
     either
-      (fail "RSAError")
+      (return $ Left "RSAError")
       (\s -> return $ SignedJWT $ i <> "." <> encode (toStrict s))
       (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
   where
