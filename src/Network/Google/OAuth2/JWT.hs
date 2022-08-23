@@ -26,7 +26,6 @@ import           Data.ByteString.Base64.URL (encode)
 import           Data.ByteString.Lazy       (fromStrict, toStrict)
 import           Data.ByteString.Char8      (unpack)
 import           Data.Maybe                 (fromMaybe, fromJust)
--- import           Data.Monoid                ((<>))
 import qualified Data.Text                  as T
 import           Data.Text.Encoding         (encodeUtf8)
 import           Data.UnixTime              (getUnixTime, utSeconds)
@@ -59,7 +58,7 @@ fromPEMFile f = readFile f >>= fromPEMString
 -- >
 fromPEMString :: String -> IO PrivateKey
 fromPEMString s =
-  fromJust . toKeyPair <$> readPrivateKey s PwNone >>=
+  readPrivateKey s PwNone >>= (
     \k -> return
       PrivateKey
         { private_pub =
@@ -74,7 +73,7 @@ fromPEMString s =
         , private_dP   = 0
         , private_dQ   = 0
         , private_qinv = 0
-        }
+        }) . fromJust . toKeyPair
 
 -- | Create the signed JWT ready for transmission
 -- in the access token request as assertion value.
