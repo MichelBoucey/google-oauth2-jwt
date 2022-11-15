@@ -23,9 +23,9 @@ import           Codec.Crypto.RSA.Pure
 import           Control.Monad              (unless)
 import qualified Data.ByteString            as B
 import           Data.ByteString.Base64.URL (encode)
-import           Data.ByteString.Lazy       (fromStrict, toStrict)
 import           Data.ByteString.Char8      (unpack)
-import           Data.Maybe                 (fromMaybe, fromJust)
+import           Data.ByteString.Lazy       (fromStrict, toStrict)
+import           Data.Maybe                 (fromJust, fromMaybe)
 import qualified Data.Text                  as T
 import           Data.Text.Encoding         (encodeUtf8)
 import           Data.UnixTime              (getUnixTime, utSeconds)
