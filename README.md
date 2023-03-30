@@ -1,4 +1,4 @@
-# Google-oauth2-jwt [![Build Status](https://travis-ci.org/MichelBoucey/google-oauth2-jwt.svg?branch=master)](https://travis-ci.org/MichelBoucey/google-oauth2-jwt)
+# Google-oauth2-jwt ![CI](https://github.com/MichelBoucey/google-oauth2-jwt/actions/workflows/haskell-ci.yml/badge.svg)
 
 Google-oauth2-jwt implements the creation of the signed JWT for Google Service Accounts,
 to make authorized calls to Google APIs from server to server. All details here:
