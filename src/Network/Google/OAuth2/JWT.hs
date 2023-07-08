@@ -95,23 +95,23 @@ getSignedJWT
   -- Google API Console.
   -> IO (Either String SignedJWT)
   -- ^ Either an error message or a signed JWT.
-getSignedJWT iss msub scs mxt pk = do
-  let xt = fromIntegral (fromMaybe 3600 mxt)
-  unless (xt >= 1 && xt <= 3600) (fail "Bad expiration time")
-  t <- getUnixTime
-  let i = header <> "." <> toB64 ("{\"iss\":\"" <> iss <> "\","
-          <> maybe T.empty (\e -> "\"sub\":\"" <> e <> "\",") msub
-          <> "\"scope\":\"" <> T.intercalate " " scs <> "\",\"aud\
-          \\":\"https://www.googleapis.com/oauth2/v4/token\",\"ex\
-          \p\":" <> toT (utSeconds t + CTime xt) <> ",\"iat\":"
-          <> toT (utSeconds t) <> "}")
-  return $
-    either
-      (return $ Left "RSAError")
-      (\s -> return $ SignedJWT $ i <> "." <> encode (toStrict s))
-      (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
-  where
-    toT = T.pack . show
-    toB64 = encode . encodeUtf8
-    header = toB64 "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
+getSignedJWT iss msub scs mxt pk =
+  let toT = T.pack . show
+      toB64 = encode . encodeUtf8
+      header = toB64 "{\"alg\":\"RS256\",\"typ\":\"JWT\"}"
+  in do
+    let xt = fromIntegral (fromMaybe 3600 mxt)
+    unless (xt >= 1 && xt <= 3600) (fail "Bad expiration time")
+    t <- getUnixTime
+    let i = header <> "." <> toB64 ("{\"iss\":\"" <> iss <> "\","
+            <> maybe T.empty (\e -> "\"sub\":\"" <> e <> "\",") msub
+            <> "\"scope\":\"" <> T.intercalate " " scs <> "\",\"aud\
+            \\":\"https://www.googleapis.com/oauth2/v4/token\",\"ex\
+            \p\":" <> toT (utSeconds t + CTime xt) <> ",\"iat\":"
+            <> toT (utSeconds t) <> "}")
+    return $
+      either
+        (return $ Left "RSAError")
+        (\s -> return $ SignedJWT $ i <> "." <> encode (toStrict s))
+        (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
 
