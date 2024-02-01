@@ -1,5 +1,5 @@
 name:                google-oauth2-jwt
-version:             0.3.3.2
+version:             0.3.3.1
 synopsis:            Get a signed JWT for Google Service Accounts
 description:         This library implements the creation of the
                      signed JWT for Google Service Accounts.
