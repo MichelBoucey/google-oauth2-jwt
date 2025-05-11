@@ -27,7 +27,7 @@ Tested-With:
 
 source-repository head
   type:     git
-  location: git://github.com/MichelBoucey/google-oauth2-jwt.git
+  location: https://github.com/MichelBoucey/google-oauth2-jwt.git
 
 library
   hs-source-dirs:   src
