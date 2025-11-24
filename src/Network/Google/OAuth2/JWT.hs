@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- | Create a signed JWT needed to make the access token request
 -- to gain access to Google APIs for server to server applications.
 --
@@ -89,7 +87,7 @@ getSignedJWT
   -> [Scope]
   -- ^ The list of the permissions that the application requests.
   -> Maybe Int
-  -- ^ Expiration time (maximun and default value is an hour, 3600).
+  -- ^ Expiration time (maximun and default value is an hour, 3600 seconds).
   -> PrivateKey
   -- ^ The private key gotten from the PEM string obtained from the
   -- Google API Console.
@@ -111,7 +109,7 @@ getSignedJWT iss msub scs mxt pk =
             <> toT (utSeconds t) <> "}")
     return $
       either
-        (return $ Left "RSAError")
-        (\s -> return $ SignedJWT $ i <> "." <> encode (toStrict s))
+        (pure $ Left "RSAError")
+        (\s -> pure $ SignedJWT $ i <> "." <> encode (toStrict s))
         (rsassa_pkcs1_v1_5_sign hashSHA256 pk $ fromStrict i)
 
