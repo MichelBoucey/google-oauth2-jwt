@@ -107,7 +107,7 @@ getSignedJWT iss msub scs mxt pk =
             \\":\"https://www.googleapis.com/oauth2/v4/token\",\"ex\
             \p\":" <> toT (utSeconds t + CTime xt) <> ",\"iat\":"
             <> toT (utSeconds t) <> "}")
-    return $
+    pure $
       either
         (pure $ Left "RSAError")
         (\s -> pure $ SignedJWT $ i <> "." <> encode (toStrict s))

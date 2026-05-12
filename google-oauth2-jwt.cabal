@@ -1,5 +1,5 @@
 name:               google-oauth2-jwt
-version:            0.3.3.2
+version:            0.3.3.3
 synopsis:           Get a signed JWT for Google Service Accounts
 description:
   A lightweight library to get the
@@ -10,7 +10,7 @@ license:            BSD3
 license-file:       LICENSE
 author:             Michel Boucey
 maintainer:         michel.boucey@gmail.com
-copyright:          (c) 2016-2025 - Michel Boucey
+copyright:          (c) 2016-2026 - Michel Boucey
 category:           Google
 build-type:         Simple
 extra-source-files: README.md
@@ -42,7 +42,7 @@ library
     , HsOpenSSL          >=0.11.7 && <0.12
     , RSA                >=2.4.1  && <2.5
     , text               >=1.2.2  && <2.2
-    , unix-time          >=0.3.6  && <0.5
+    , unix-time          >=0.3.6  && <0.6
 
   default-language:   Haskell2010
   ghc-options:        -Wall
